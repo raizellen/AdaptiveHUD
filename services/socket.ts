@@ -5,26 +5,24 @@ export interface Telemetry {
   temperature: number;
 }
 
-export interface HUDData {
-  telemetry: Telemetry;
-  alerts: string[];
-}
-
 const BACKEND_IP = process.env.EXPO_PUBLIC_BACKEND_IP;
 
 export function connectToBackend(
-  onData: (data: HUDData) => void
+  onData: (data: Telemetry) => void
 ) {
   const socket = new WebSocket(
     `ws://${BACKEND_IP}:8080`
   );
 
   socket.onopen = () => {
-    console.log("Connected to Node.js backend");
+    console.log("Connected to EVA backend");
   };
 
   socket.onmessage = (event) => {
-    const data: HUDData = JSON.parse(event.data);
+    const data: Telemetry = JSON.parse(event.data);
+
+    console.log("Telemetry received:", data);
+
     onData(data);
   };
 
@@ -33,7 +31,7 @@ export function connectToBackend(
   };
 
   socket.onclose = () => {
-    console.log("Disconnected from Node.js backend");
+    console.log("Disconnected from backend");
   };
 
   return socket;

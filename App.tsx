@@ -3,22 +3,20 @@ import { useEffect, useState } from "react";
 import MainHUD from "./components/MainHUD";
 import {
   connectToBackend,
-  HUDData,
+  Telemetry,
 } from "./services/socket";
 
 export default function App() {
-
-  const [hudData, setHudData] = useState<HUDData | null>(null);
+  const [telemetry, setTelemetry] =
+    useState<Telemetry | null>(null);
 
   useEffect(() => {
-
-    const socket = connectToBackend(setHudData);
+    const socket = connectToBackend(setTelemetry);
 
     return () => {
       socket.close();
     };
-
   }, []);
 
-  return <MainHUD data={hudData} />;
+  return <MainHUD telemetry={telemetry} />;
 }

@@ -1,20 +1,22 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from "react";
+
+import MainHUD from "./components/MainHUD";
+import {
+  connectToBackend,
+  Telemetry,
+} from "./services/socket";
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
-}
+  const [telemetry, setTelemetry] =
+    useState<Telemetry | null>(null);
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+  useEffect(() => {
+    const socket = connectToBackend(setTelemetry);
+
+    return () => {
+      socket.close();
+    };
+  }, []);
+
+  return <MainHUD telemetry={telemetry} />;
+}

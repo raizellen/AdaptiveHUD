@@ -1,47 +1,58 @@
 import { StyleSheet, Text, View } from "react-native";
 
+import { HUDState } from "../backend/adaptive_engine/displayStateManager";
+import { DisplayItem } from "../backend/adaptive_engine/informationManager";
+import { TelemetryPriority } from "../backend/adaptive_engine/priorityManager";
+import { VoiceCommand } from "../backend/voice/commandParser";
 import { Telemetry } from "../services/socket";
+import AlertDisplay from "./AlertDisplay";
+import TelemetryPanel from "./TelemetryPanel";
+import VoiceControlPanel from "./VoiceControlPanel";
 
 interface MainHUDProps {
   telemetry: Telemetry | null;
+  displayItems: DisplayItem[];
+  activeAlerts: TelemetryPriority[];
+  hudState: HUDState;
+  onVoiceCommand?: (command: VoiceCommand) => void;
 }
+
+// Subtle background tint so the overall HUD state is visible even
+// at a glance, on top of the explicit alert banners.
+const HUD_STATE_BACKGROUND: Record<HUDState, string> = {
+  normal: "#000000",
+  warning: "#1a1400",
+  emergency: "#1a0000",
+};
 
 export default function MainHUD({
   telemetry,
+  displayItems,
+  activeAlerts,
+  hudState,
+  onVoiceCommand,
 }: MainHUDProps) {
-  if (!telemetry) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.title}>EVA HUD</Text>
+  return (
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: HUD_STATE_BACKGROUND[hudState] },
+      ]}
+    >
+      <Text style={styles.title}>EVA HUD</Text>
 
+      {!telemetry ? (
         <Text style={styles.status}>
           Connecting to EVA system...
         </Text>
-      </View>
-    );
-  }
+      ) : (
+        <>
+          <AlertDisplay alerts={activeAlerts} />
+          <TelemetryPanel items={displayItems} />
+        </>
+      )}
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>EVA HUD</Text>
-
-      <View style={styles.telemetry}>
-        <Text style={styles.data}>
-          O₂: {telemetry.oxygen}%
-        </Text>
-
-        <Text style={styles.data}>
-          CO₂: {telemetry.co2}
-        </Text>
-
-        <Text style={styles.data}>
-          Battery: {telemetry.battery}%
-        </Text>
-
-        <Text style={styles.data}>
-          Temperature: {telemetry.temperature}°C
-        </Text>
-      </View>
+      <VoiceControlPanel onCommand={onVoiceCommand} />
     </View>
   );
 }
@@ -49,7 +60,6 @@ export default function MainHUD({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -58,16 +68,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 32,
     marginBottom: 40,
-  },
-
-  telemetry: {
-    alignItems: "flex-start",
-  },
-
-  data: {
-    color: "#fff",
-    fontSize: 20,
-    marginVertical: 8,
   },
 
   status: {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import MainHUD from "./components/MainHUD";
+import { useAdaptiveHUD } from "./services/adaptiveHUDEngine";
 import {
   connectToBackend,
   Telemetry,
@@ -18,5 +19,16 @@ export default function App() {
     };
   }, []);
 
-  return <MainHUD telemetry={telemetry} />;
+  const { displayItems, activeAlerts, hudState, handleVoiceCommand } =
+    useAdaptiveHUD(telemetry);
+
+  return (
+    <MainHUD
+      telemetry={telemetry}
+      displayItems={displayItems}
+      activeAlerts={activeAlerts}
+      hudState={hudState}
+      onVoiceCommand={handleVoiceCommand}
+    />
+  );
 }

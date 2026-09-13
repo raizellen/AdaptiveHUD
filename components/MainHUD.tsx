@@ -1,15 +1,19 @@
 import { StyleSheet, Text, View } from "react-native";
 
+import { VoiceCommand } from "../backend/voice/commandParser";
 import { Telemetry } from "../services/socket";
 import AlertDisplay from "./AlertDisplay";
 import TelemetryPanel from "./TelemetryPanel";
+import VoiceControlPanel from "./VoiceControlPanel";
 
 interface MainHUDProps {
   telemetry: Telemetry | null;
+  onVoiceCommand?: (command: VoiceCommand) => void;
 }
 
 export default function MainHUD({
   telemetry,
+  onVoiceCommand,
 }: MainHUDProps) {
   return (
     <View style={styles.container}>
@@ -25,6 +29,8 @@ export default function MainHUD({
           <TelemetryPanel telemetry={telemetry} />
         </>
       )}
+
+      <VoiceControlPanel onCommand={onVoiceCommand} />
     </View>
   );
 }

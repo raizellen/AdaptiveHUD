@@ -1,68 +1,35 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { Telemetry } from "../services/socket";
+import { TelemetryPriority } from "../backend/adaptive_engine/priorityManager";
 
 interface AlertDisplayProps {
-  telemetry: Telemetry;
+  alerts: TelemetryPriority[];
 }
 
-interface Alert {
-  message: string;
-  level: "warning" | "critical";
-}
+const METRIC_LABELS: Record<string, string> = {
+  oxygen: "OXYGEN",
+  co2: "CO2",
+  battery: "BATTERY",
+  temperature: "TEMPERATURE",
+};
 
-// NOTE: these are placeholder thresholds for the MVP.
-// This logic gets replaced/absorbed by the Python Data
-// Processing Layer + Adaptive HUD Engine later on.
-function getAlerts(telemetry: Telemetry): Alert[] {
-  const alerts: Alert[] = [];
-
-  if (telemetry.oxygen < 20) {
-    alerts.push({ message: "LOW OXYGEN", level: "critical" });
-  } else if (telemetry.oxygen < 40) {
-    alerts.push({ message: "Oxygen low", level: "warning" });
-  }
-
-  if (telemetry.co2 > 2) {
-    alerts.push({ message: "HIGH CO2", level: "critical" });
-  }
-
-  if (telemetry.battery < 15) {
-    alerts.push({ message: "LOW BATTERY", level: "critical" });
-  } else if (telemetry.battery < 30) {
-    alerts.push({ message: "Battery low", level: "warning" });
-  }
-
-  if (telemetry.temperature > 45 || telemetry.temperature < -10) {
-    alerts.push({
-      message: "TEMPERATURE OUT OF RANGE",
-      level: "critical",
-    });
-  }
-
-  return alerts;
-}
-
-export default function AlertDisplay({
-  telemetry,
-}: AlertDisplayProps) {
-  const alerts = getAlerts(telemetry);
-
+export default function AlertDisplay({ alerts }: AlertDisplayProps) {
   if (alerts.length === 0) return null;
 
   return (
     <View style={styles.container}>
-      {alerts.map((alert, i) => (
+      {alerts.map((alert) => (
         <View
-          key={i}
+          key={alert.metric}
           style={[
             styles.alert,
-            alert.level === "critical"
-              ? styles.critical
-              : styles.warning,
+            alert.level === "critical" ? styles.critical : styles.warning,
           ]}
         >
-          <Text style={styles.text}>{alert.message}</Text>
+          <Text style={styles.text}>
+            {alert.level === "critical" ? "CRITICAL: " : "WARNING: "}
+            {METRIC_LABELS[alert.metric]}
+          </Text>
         </View>
       ))}
     </View>

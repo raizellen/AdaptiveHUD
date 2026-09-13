@@ -1,6 +1,8 @@
 import { StyleSheet, Text, View } from "react-native";
 
 import { Telemetry } from "../services/socket";
+import AlertDisplay from "./AlertDisplay";
+import TelemetryPanel from "./TelemetryPanel";
 
 interface MainHUDProps {
   telemetry: Telemetry | null;
@@ -9,39 +11,20 @@ interface MainHUDProps {
 export default function MainHUD({
   telemetry,
 }: MainHUDProps) {
-  if (!telemetry) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.title}>EVA HUD</Text>
-
-        <Text style={styles.status}>
-          Connecting to EVA system...
-        </Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>EVA HUD</Text>
 
-      <View style={styles.telemetry}>
-        <Text style={styles.data}>
-          O₂: {telemetry.oxygen}%
+      {!telemetry ? (
+        <Text style={styles.status}>
+          Connecting to EVA system...
         </Text>
-
-        <Text style={styles.data}>
-          CO₂: {telemetry.co2}
-        </Text>
-
-        <Text style={styles.data}>
-          Battery: {telemetry.battery}%
-        </Text>
-
-        <Text style={styles.data}>
-          Temperature: {telemetry.temperature}°C
-        </Text>
-      </View>
+      ) : (
+        <>
+          <AlertDisplay telemetry={telemetry} />
+          <TelemetryPanel telemetry={telemetry} />
+        </>
+      )}
     </View>
   );
 }
@@ -58,16 +41,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 32,
     marginBottom: 40,
-  },
-
-  telemetry: {
-    alignItems: "flex-start",
-  },
-
-  data: {
-    color: "#fff",
-    fontSize: 20,
-    marginVertical: 8,
   },
 
   status: {

@@ -10,13 +10,9 @@ const BACKEND_IP = process.env.EXPO_PUBLIC_BACKEND_IP;
 export function connectToBackend(
   onData: (data: Telemetry) => void
 ) {
-  const socket = new WebSocket(
-    `ws://${BACKEND_IP}:8080`
-  );
+  const socket = new WebSocket( `ws://${BACKEND_IP}:8080` );
 
-  socket.onopen = () => {
-    console.log("Connected to EVA backend");
-  };
+  socket.onopen = () => { console.log("Connected to EVA backend"); };
 
   socket.onmessage = (event) => {
     const data: Telemetry = JSON.parse(event.data);

@@ -1,18 +1,10 @@
 import { useState } from "react";
-import {
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 
 import { VoiceCommand } from "../backend/voice/commandParser";
 import { useVoiceControl } from "../services/voiceControl";
 
-interface VoiceControlPanelProps {
-  onCommand?: (command: VoiceCommand) => void;
-}
+interface VoiceControlPanelProps { onCommand?: (command: VoiceCommand) => void }
 
 export default function VoiceControlPanel({
   onCommand,
@@ -22,8 +14,6 @@ export default function VoiceControlPanel({
     listening,
     transcript,
     lastCommand,
-    start,
-    stop,
     simulate,
     micAvailable,
   } = useVoiceControl(onCommand);
@@ -36,23 +26,15 @@ export default function VoiceControlPanel({
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
+
+      <Text
         style={[
-          styles.micButton,
-          listening && styles.micButtonActive,
-          !micAvailable && styles.micButtonDisabled,
+          styles.micStatus,
+          micAvailable ? styles.micAvailable : styles.micUnavailable,
         ]}
-        onPress={listening ? stop : start}
-        disabled={!micAvailable}
       >
-        <Text style={styles.micButtonText}>
-          {!micAvailable
-            ? "Mic unavailable (use dev build)"
-            : listening
-            ? "Listening..."
-            : "Hold to Talk"}
-        </Text>
-      </TouchableOpacity>
+        {micAvailable ? "● Mic available" : "● Mic unavailable"}
+      </Text>
 
       {transcript ? (
         <Text style={styles.transcript}>"{transcript}"</Text>
@@ -83,29 +65,26 @@ export default function VoiceControlPanel({
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 24,
-    width: "80%",
+    width: "100%",
     alignItems: "center",
   },
 
-  micButton: {
-    backgroundColor: "#1a3a8a",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-  },
-
-  micButtonActive: {
-    backgroundColor: "#1a8a3a",
-  },
-
-  micButtonDisabled: {
-    backgroundColor: "#333",
-  },
-
-  micButtonText: {
-    color: "#fff",
+  micStatus: {
+    fontSize: 14,
     fontWeight: "bold",
+  },
+
+  micAvailable: {
+    color: "#4ade80",
+  },
+
+  micUnavailable: {
+    color: "#ef4444",
+  },
+
+  listening: {
+    color: "#4ade80",
+    marginTop: 6,
   },
 
   transcript: {

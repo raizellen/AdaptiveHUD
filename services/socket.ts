@@ -1,3 +1,5 @@
+import { VoiceCommand } from "../backend/voice/commandParser";
+
 export interface Telemetry {
   oxygen: number;
   co2: number;
@@ -5,21 +7,37 @@ export interface Telemetry {
   temperature: number;
 }
 
+type IncomingMessage =
+  | { type: "telemetry"; payload: Telemetry }
+  | { type: "voice_command"; payload: VoiceCommand };
+
 const BACKEND_IP = process.env.EXPO_PUBLIC_BACKEND_IP;
 
-export function connectToBackend(
-  onData: (data: Telemetry) => void
-) {
-  const socket = new WebSocket( `ws://${BACKEND_IP}:8080` );
+interface ConnectHandlers {
+  onTelemetry: (data: Telemetry) => void;
+  onVoiceCommand?: (command: VoiceCommand) => void;
+}
 
-  socket.onopen = () => { console.log("Connected to EVA backend"); };
+export function connectToBackend({
+  onTelemetry,
+  onVoiceCommand,
+}: ConnectHandlers) {
+  const socket = new WebSocket(`ws://${BACKEND_IP}:8080`);
+
+  socket.onopen = () => {
+    console.log("Connected to EVA backend");
+  };
 
   socket.onmessage = (event) => {
-    const data: Telemetry = JSON.parse(event.data);
+    const message: IncomingMessage = JSON.parse(event.data);
 
-    console.log("Telemetry received:", data);
-
-    onData(data);
+    if (message.type === "telemetry") {
+      console.log("Telemetry received:", message.payload);
+      onTelemetry(message.payload);
+    } else if (message.type === "voice_command") {
+      console.log("Remote voice command received:", message.payload);
+      onVoiceCommand?.(message.payload);
+    }
   };
 
   socket.onerror = (error) => {

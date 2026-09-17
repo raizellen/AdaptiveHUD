@@ -37,18 +37,24 @@ export default function AlertDisplay({ alerts }: AlertDisplayProps) {
 }
 
 const styles = StyleSheet.create({
+  // Wraps left-to-right instead of stacking, so alerts sit as a slim
+  // horizontal banner across the top rather than eating vertical
+  // space, which is scarcer on a landscape screen.
   container: {
-    marginBottom: 20,
-    width: "100%",
-    alignItems: "center",
+    paddingTop: 4,
+    paddingBottom: 12,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
   },
 
   alert: {
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 6,
+    marginHorizontal: 6,
     marginVertical: 4,
-    width: "80%",
     alignItems: "center",
   },
 

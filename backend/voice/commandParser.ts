@@ -67,7 +67,7 @@ const RULES: Rule[] = [
     patterns: [/\b(status report|status|report|hows it looking)\b/],
   },
   {
-    type: "ACKNOWLEDGE_ALERT",
+    type: "ACKNOWLEDGE_ALERT", // acknowledge temp dismisses, show again if went back to normal then new alert
     patterns: [
       /\b(acknowledge|clear alert|dismiss alert|copy that)\b/,
     ],

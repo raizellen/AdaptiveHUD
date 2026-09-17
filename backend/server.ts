@@ -61,12 +61,6 @@ const httpServer = http.createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "GET" && req.url === "/voice-simulator") {
-    res.writeHead(200, { "Content-Type": "text/html" });
-    res.end(fs.readFileSync(VOICE_SIMULATOR_FILE, "utf-8"));
-    return;
-  }
-
   if (req.method === "POST" && req.url === "/telemetry") {
     const body = await readBody(req);
     try {
@@ -124,7 +118,4 @@ wss.on("connection", (socket) => {
 httpServer.listen(PORT, () => {
   console.log(`EVA HUD backend running on port ${PORT}`);
   console.log(`Telemetry simulator: http://localhost:${PORT}/simulator`);
-  console.log(
-    `Voice simulator:     http://localhost:${PORT}/voice-simulator`
-  );
 });

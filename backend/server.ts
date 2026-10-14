@@ -3,6 +3,10 @@ import http from "http";
 import path from "path";
 import { WebSocket, WebSocketServer } from "ws";
 
+import {
+  processTelemetry,
+  TelemetryAnomaly,
+} from "./data_processing/telemetryManager";
 import { parseVoiceCommand, VoiceCommand } from "./voice/commandParser";
 
 const PORT = 8080;
@@ -24,7 +28,8 @@ export interface Telemetry {
 // Every WS message is tagged so the phone knows how to route it.
 type OutgoingMessage =
   | { type: "telemetry"; payload: Telemetry }
-  | { type: "voice_command"; payload: VoiceCommand };
+  | { type: "voice_command"; payload: VoiceCommand }
+  | { type: "telemetry_anomaly"; payload: TelemetryAnomaly[] };
 
 function loadTelemetry(): Telemetry {
   const raw = fs.readFileSync(TELEMETRY_FILE, "utf-8");
@@ -65,12 +70,30 @@ const httpServer = http.createServer(async (req, res) => {
     const body = await readBody(req);
     try {
       const update = JSON.parse(body);
-      currentTelemetry = { ...currentTelemetry, ...update };
+      const merged = { ...currentTelemetry, ...update };
+
+      // The Data Processing Layer validates the merged reading,
+      // clamps/rejects anything implausible, and flags anomalies —
+      // see backend/data_processing/telemetryManager.ts.
+      const { telemetry: processed, anomalies } = await processTelemetry(
+        merged
+      );
+
+      anomalies.forEach((a) =>
+        console.warn(`Telemetry anomaly: ${a.metric} (${a.type}) — ${a.note}`)
+      );
+
+      currentTelemetry = processed;
       saveTelemetry(currentTelemetry);
       broadcast({ type: "telemetry", payload: currentTelemetry });
+      // Always broadcast, even when empty — an empty array is how the
+      // HUD knows to clear a previously-shown anomaly banner.
+      broadcast({ type: "telemetry_anomaly", payload: anomalies });
 
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ ok: true, telemetry: currentTelemetry }));
+      res.end(
+        JSON.stringify({ ok: true, telemetry: currentTelemetry, anomalies })
+      );
     } catch {
       res.writeHead(400, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: false, error: "Invalid JSON body" }));

@@ -41,6 +41,9 @@ export function contextReducer(
     case "FOCUS_METRIC":
       return { ...state, focusedMetric: command.metric ?? null };
 
+    case "HIDE_METRIC":
+      return { ...state, focusedMetric: null };
+
     case "ACKNOWLEDGE_ALERT": {
       const acknowledgedAlerts = new Set(state.acknowledgedAlerts);
       activeAlertMetrics.forEach((metric) =>

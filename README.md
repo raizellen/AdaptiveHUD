@@ -9,6 +9,18 @@
   7. run `py backend/voice/voice_listener.py --model models/vosk-model-small-en-us-0.15 --host <your-machine-ip>`
   8. open another terminal, ensure you are in the root directory and run `npx expo start`
 
+Full run order
+# Terminal 1 — backend (HTTP + WebSocket, port 8080)
+npx tsx backend/server.ts
+
+# Terminal 2 — telemetry data processing layer (port 8090)
+py backend/data_processing/telemetryProcessor.py --port 8090
+
+# Terminal 3 — voice listener (no port, just posts to 8080)
+py backend/voice/voice_listener.py --model models/vosk-model-small-en-us-0.15 --host <your-machine-ip>
+
+# Terminal 4 — Expo (port 8081, for the phone app bundle)
+npx expo start
 
 
 ## TELEMETRY SIMULATION

@@ -1,7 +1,13 @@
+// TODO:
+// - completely hide
+// - acknowledge shouldn't permanently remove warnings
+// - hide_metrics currently hiding irregardless if it is the current displayed metric
+
 export type VoiceCommandType =
   | "STATUS_REPORT"
   | "ACKNOWLEDGE_ALERT"
   | "FOCUS_METRIC"
+  | "HIDE_METRIC"
   | "MUTE_ALERTS"
   | "UNMUTE_ALERTS"
   | "UNKNOWN";
@@ -53,6 +59,15 @@ function buildMetricRules(): Rule[] {
             ),
           ],
         });
+        rules.push({
+          type: "HIDE_METRIC",
+          metric,
+          patterns: [
+            new RegExp(
+              `(hide)\\s+(the\\s+)?${alias}` // fix to just hide
+            ),
+          ],
+        });
       });
     }
   );
@@ -78,7 +93,7 @@ const RULES: Rule[] = [
   },
   {
     type: "UNMUTE_ALERTS",
-    patterns: [/\b(unmute|resume)\s+(the\s+)?alerts?\b/],
+    patterns: [/\b(unmute|resume|show)\s+(the\s+)?alerts?\b/],
   },
   ...buildMetricRules(),
 ];

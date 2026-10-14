@@ -22,6 +22,43 @@
   }
   input[type="range"] { width: 100%; }
   .status { margin-top: 2rem; font-size: 0.85rem; color: #8f8; }
+
+  .anomaly-section {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #333;
+  }
+  .anomaly-section h2 {
+    font-size: 1rem;
+    color: #ffd24d;
+    margin-bottom: 0.5rem;
+  }
+  .anomaly-section p {
+    font-size: 0.8rem;
+    color: #888;
+    margin-bottom: 1rem;
+  }
+  .anomaly-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .anomaly-buttons button {
+    background: #1a1a1a;
+    color: #eee;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 0.6rem;
+    font-size: 0.85rem;
+    text-align: left;
+    cursor: pointer;
+  }
+  .anomaly-buttons button:hover { background: #262626; }
+  .anomaly-buttons button.reset {
+    border-color: #4d8f4d;
+    color: #9f9;
+  }
+  .anomaly-buttons button.reset:hover { background: #10200f; }
 </style>
 </head>
 <body>
@@ -49,6 +86,23 @@
 
   <div class="status" id="status">Idle</div>
 
+  <div class="anomaly-section">
+    <h2>⚠ Anomaly Testing</h2>
+    <p>
+      The sliders above are already clamped to plausible values, so
+      normal dragging won't trigger the Data Processing Layer. These
+      buttons send values the sliders can't, straight to /telemetry,
+      to test each anomaly type.
+    </p>
+    <div class="anomaly-buttons">
+      <button onclick="testOutOfRange()">Out-of-range O2 (200%)</button>
+      <button onclick="testInvalidType()">Invalid O2 (non-numeric)</button>
+      <button onclick="testRateSpike()">O2 rate spike (jump 90 in one tick)</button>
+      <button onclick="testCrossCheck()">Cross-check mismatch (CO2 up, O2 unchanged)</button>
+      <button class="reset" onclick="undoAnomaly()">↺ Reset to normal (clear anomaly)</button>
+    </div>
+  </div>
+
   <script>
     const fields = ["oxygen", "co2", "battery", "temperature"];
 
@@ -60,26 +114,80 @@
         payload[f] = val;
         document.getElementById(f + "Val").textContent = val;
       });
+      return sendRaw(payload);
+    }
 
-      fetch("/telemetry", {
+    // Posts directly to /telemetry with whatever payload you give it,
+    // bypassing the sliders' min/max/step entirely — that's what lets
+    // these test buttons send values the UI itself would never produce.
+    function sendRaw(payload) {
+      return fetch("/telemetry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       })
         .then((r) => r.json())
-        .then(() => {
-          document.getElementById("status").textContent =
-            "Sent " + new Date().toLocaleTimeString();
+        .then((data) => {
+          if (data.anomalies && data.anomalies.length > 0) {
+            document.getElementById("status").textContent =
+              `⚠ ${data.anomalies.length} anomaly(ies) flagged: ` +
+              data.anomalies.map((a) => `${a.metric} (${a.type})`).join(", ");
+          } else {
+            document.getElementById("status").textContent =
+              "Sent " + new Date().toLocaleTimeString() + " — no anomalies";
+          }
+          return data;
         })
         .catch(() => {
           document.getElementById("status").textContent =
-            "Error sending telemetry";
+            "Error sending telemetry — is backend/server.ts running?";
         });
     }
 
     fields.forEach((f) => {
       document.getElementById(f).addEventListener("input", send);
     });
+
+    // --- Anomaly test presets ---
+
+    function testOutOfRange() {
+      sendRaw({ oxygen: 200 });
+    }
+
+    function testInvalidType() {
+      sendRaw({ oxygen: "banana" });
+    }
+
+    async function testRateSpike() {
+      // Establish a known baseline, then jump far past the processor's
+      // MAX_DELTA for oxygen (15) in a single reading.
+      await sendRaw({ oxygen: 95 });
+      await sendRaw({ oxygen: 5 });
+    }
+
+    async function testCrossCheck() {
+      // CO2 rises without oxygen dropping to match — the processor
+      // should flag this as a likely single-sensor fault.
+      await sendRaw({ co2: 0.2, oxygen: 90 });
+      await sendRaw({ co2: 1.9, oxygen: 90 });
+    }
+
+    // Restores a plausible baseline reading for every metric — this
+    // clears any anomaly banner (an empty anomalies array is what
+    // tells the HUD to hide it) AND re-syncs the sliders to match, so
+    // dragging one afterward doesn't itself look like a rate spike
+    // against whatever a test button last sent.
+    function undoAnomaly() {
+      const normal = { oxygen: 98, co2: 0.5, battery: 90, temperature: 21 };
+      Object.keys(normal).forEach((f) => {
+        const el = document.getElementById(f);
+        if (el) {
+          el.value = normal[f];
+          document.getElementById(f + "Val").textContent = normal[f];
+        }
+      });
+      return sendRaw(normal);
+    }
   </script>
 </body>
 </html>

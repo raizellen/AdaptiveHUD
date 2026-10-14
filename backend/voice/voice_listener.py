@@ -11,7 +11,7 @@ import sounddevice as sd
 from vosk import KaldiRecognizer, Model
 
 # restricting Vosk to only these phrases (a "grammar") is much more accurate than free-form dictation
-VERBS = ["show", "check", "whats", "display"]
+VERBS = ["show", "check", "whats", "display", "hide"]
 METRIC_ALIASES = {
     "oxygen": ["oxygen", "o2", "o two"],
     "co2": ["co2", "carbon dioxide", "c o two"],

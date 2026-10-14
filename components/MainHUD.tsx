@@ -3,9 +3,11 @@ import { StyleSheet, Text, View } from "react-native";
 import { HUDState } from "../backend/adaptive_engine/displayStateManager";
 import { DisplayItem } from "../backend/adaptive_engine/informationManager";
 import { TelemetryPriority } from "../backend/adaptive_engine/priorityManager";
+import { TelemetryAnomaly } from "../backend/data_processing/telemetryManager";
 import { VoiceCommand } from "../backend/voice/commandParser";
 import { Telemetry } from "../services/socket";
 import AlertDisplay from "./AlertDisplay";
+import AnomalyBanner from "./AnomalyBanner";
 import TelemetryPanel from "./TelemetryPanel";
 import VoiceControlPanel from "./VoiceControlPanel";
 
@@ -13,6 +15,7 @@ interface MainHUDProps {
   telemetry: Telemetry | null;
   displayItems: DisplayItem[];
   activeAlerts: TelemetryPriority[];
+  anomalies?: TelemetryAnomaly[];
   hudState: HUDState;
   onVoiceCommand?: (command: VoiceCommand) => void;
 }
@@ -43,6 +46,7 @@ export default function MainHUD({
   telemetry,
   displayItems,
   activeAlerts,
+  anomalies = [],
   hudState,
   onVoiceCommand,
 }: MainHUDProps) {
@@ -69,38 +73,43 @@ export default function MainHUD({
         </View>
       ) : (
         <>
-          <AlertDisplay alerts={activeAlerts} />
+          <View style={styles.upperContainer}>
+            <AnomalyBanner anomalies={anomalies} />
+            <AlertDisplay alerts={activeAlerts} />
+          </View>
 
-          <View style={styles.body}>
-            <View style={styles.telemetryColumn}>
-              <TelemetryPanel items={displayItems} />
-            </View>
-
-            <View style={styles.fieldContainer}>
-              <View style={styles.focus}>
-                {highlightedItem && (
-                  <>
-                    <Text style={styles.focusLabel}>
-                      {LABELS[highlightedItem.metric]}
-                    </Text>
-
-                    <Text
-                      style={[
-                        styles.focusValue,
-                        highlightedItem.level === "warning" && styles.warning,
-                        highlightedItem.level === "critical" && styles.critical,
-                      ]}
-                    >
-                      {highlightedItem.value}
-                      {UNITS[highlightedItem.metric]}
-                    </Text>
-                  </>
-                )}
+          <View style={styles.lowerContainer}>
+            <View style={styles.body}>
+              <View style={styles.telemetryColumn}>
+                <TelemetryPanel items={displayItems} />
               </View>
-            </View>
 
-            <View style={styles.voiceColumn}>
-              <VoiceControlPanel onCommand={onVoiceCommand} />
+              <View style={styles.fieldContainer}>
+                <View style={styles.focus}>
+                  {highlightedItem && (
+                    <>
+                      <Text style={styles.focusLabel}>
+                        {LABELS[highlightedItem.metric]}
+                      </Text>
+
+                      <Text
+                        style={[
+                          styles.focusValue,
+                          highlightedItem.level === "warning" && styles.warning,
+                          highlightedItem.level === "critical" && styles.critical,
+                        ]}
+                      >
+                        {highlightedItem.value}
+                        {UNITS[highlightedItem.metric]}
+                      </Text>
+                    </>
+                  )}
+                </View>
+              </View>
+
+              <View style={styles.voiceColumn}>
+                <VoiceControlPanel onCommand={onVoiceCommand} />
+              </View>
             </View>
           </View>
         </>
@@ -113,6 +122,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
+  },
+
+  upperContainer: {
+    flex: 1,
+  },
+
+  lowerContainer: {
+    flex: 5,
   },
 
   centeredFill: {

@@ -1,6 +1,6 @@
 {
-  "oxygen": 90,
-  "co2": 1.9,
-  "battery": 100,
+  "bpm": 87,
+  "spo2": 98,
+  "battery": 88,
   "temperature": 21
 }

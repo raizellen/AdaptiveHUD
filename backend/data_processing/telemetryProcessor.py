@@ -28,11 +28,6 @@ Checks performed, per reading:
      than physically plausible since the last reading (e.g. battery
      dropping 40 points in one tick) — almost always a sensor glitch,
      not a real event.
-  4. Cross-check — oxygen and CO2 are physically linked in a real EVA
-     suit (a CO2 scrubber failure raises CO2 *and* consumes O2
-     together). A sharp move in one without the other suggests a
-     single faulty sensor rather than a genuine dual life-support
-     failure.
 
 When a reading fails validation, the processor falls back to the last
 known-good value for that metric rather than passing garbage
@@ -62,14 +57,18 @@ from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
 
-METRICS = ["oxygen", "co2", "battery", "temperature"]
+METRICS = ["bpm", "spo2", "battery", "temperature"]
 
 # Physically IMPOSSIBLE bounds — wider than the warning/critical
 # thresholds in priorityManager.ts. A reading outside these ranges
 # isn't "dangerous", it's "the sensor is lying".
+
+# The lower bounds also reject the 0 (or -999) that pulse-oximeter
+# sensors report when no finger is on them, so "no signal" shows up
+# as an anomaly instead of a critical alert.
 PLAUSIBLE_RANGES = {
-    "oxygen": (0, 100),
-    "co2": (0, 10),
+    "bpm": (20, 250),
+    "spo2": (50, 100),
     "battery": (0, 100),
     "temperature": (-100, 100),
 }
@@ -79,13 +78,13 @@ PLAUSIBLE_RANGES = {
 # from the simulator/voice_listener cadence today — tune this once
 # with real sensor's actual polling interval.
 MAX_DELTA = {
-    "oxygen": 15,
-    "co2": 2,
+    "bpm": 50,
+    "spo2": 10,
     "battery": 10,
     "temperature": 15,
 }
 
-DEFAULTS = {"oxygen": 100, "co2": 0, "battery": 100, "temperature": 20}
+DEFAULTS = {"bpm": 75, "spo2": 98, "battery": 100, "temperature": 20}
 
 
 @dataclass
@@ -106,14 +105,13 @@ class Anomaly:
 
 class TelemetryProcessor:
     """Stateful processor — remembers the last known-good reading per
-    metric so it can catch rate-of-change and cross-check anomalies
+    metric so it can catch rate-of-change anomalies
     across calls, not just within a single reading."""
 
     def __init__(self) -> None:
         self.last_good: dict = dict(DEFAULTS)
 
     def process(self, raw: dict) -> dict:
-        previous = dict(self.last_good)  # snapshot before this reading mutates state
         anomalies: list[Anomaly] = []
         cleaned: dict = dict(self.last_good)
 
@@ -155,40 +153,10 @@ class TelemetryProcessor:
             cleaned[metric] = value
             self.last_good[metric] = value
 
-        anomalies.extend(self._cross_check(raw, cleaned, previous))
         return {
             "telemetry": cleaned,
             "anomalies": [a.to_dict() for a in anomalies],
         }
-
-    def _cross_check(self, raw: dict, cleaned: dict, previous: dict) -> list:
-        """Oxygen and CO2 should move together during a real failure
-        (a CO2 scrubber fault raises CO2 while consuming O2). If only
-        one moved sharply, that's more likely a single bad sensor than
-        a real dual life-support event — flag it so the crew knows to
-        weigh it accordingly, without hiding the reading."""
-        anomalies: list = []
-        if "oxygen" not in raw or "co2" not in raw:
-            return anomalies
-
-        o2_drop = previous["oxygen"] - cleaned["oxygen"]
-        co2_rise = cleaned["co2"] - previous["co2"]
-
-        if o2_drop > 8 and co2_rise < 0.2:
-            anomalies.append(Anomaly(
-                "oxygen", "sensor_mismatch", raw.get("oxygen"),
-                "oxygen dropped sharply without a matching CO2 rise; "
-                "possible single-sensor fault rather than a real leak",
-            ))
-        elif co2_rise > 1.0 and o2_drop < 0.2:
-            anomalies.append(Anomaly(
-                "co2", "sensor_mismatch", raw.get("co2"),
-                "CO2 rose sharply without a matching oxygen drop; "
-                "possible single-sensor fault rather than a real leak",
-            ))
-
-        return anomalies
-
 
 def make_handler(processor: TelemetryProcessor):
     class Handler(BaseHTTPRequestHandler):

@@ -13,8 +13,8 @@ from vosk import KaldiRecognizer, Model
 # restricting Vosk to only these phrases (a "grammar") is much more accurate than free-form dictation
 VERBS = ["show", "check", "whats", "display", "hide"]
 METRIC_ALIASES = {
-    "oxygen": ["oxygen", "o2", "o two"],
-    "co2": ["co2", "carbon dioxide", "c o two"],
+    "bpm": ["heart rate", "pulse", "b p m"],
+    "spo2": ["blood oxygen", "oxygen", "spo2", "s p o two"],
     "battery": ["battery", "power"],
     "temperature": ["temperature", "temp"],
 }

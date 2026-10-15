@@ -1,10 +1,9 @@
 // Talks to the "Python Data Processing Layer" referenced in
 // backend/adaptive_engine/priorityManager.ts's threshold comment:
 // telemetryProcessor.py validates raw readings, catches anomalies
-// (out-of-range values, implausible jumps, oxygen/CO2 cross-check
-// mismatches) and hands back a cleaned verdict. The rest of the
-// engine (priorityManager.ts etc.) keeps consuming plain telemetry
-// values, unaware anything happened.
+// (out-of-range values, implausible jumps) and hands back a cleaned verdict.
+// The rest of the engine (priorityManager.ts etc.) keeps consuming plain
+// telemetry values, unaware anything happened.
 //
 // Run the processor with:
 //   py backend/data_processing/telemetryProcessor.py --port 8090
@@ -13,7 +12,7 @@
 // values through unprocessed (with a one-time console warning) so
 // the rest of the app keeps working without anomaly protection.
 
-export type TelemetryMetric = "oxygen" | "co2" | "battery" | "temperature";
+export type TelemetryMetric = "bpm" | "spo2" | "battery" | "temperature";
 export type TelemetryReading = Record<TelemetryMetric, number>;
 
 export interface TelemetryAnomaly {

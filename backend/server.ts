@@ -19,8 +19,8 @@ const VOICE_SIMULATOR_FILE = path.join(
 );
 
 export interface Telemetry {
-  oxygen: number;
-  co2: number;
+  bpm: number;
+  spo2: number;
   battery: number;
   temperature: number;
 }

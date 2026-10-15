@@ -13,8 +13,8 @@ export type VoiceCommandType =
   | "UNKNOWN";
 
 export type TelemetryMetric =
-  | "oxygen"
-  | "co2"
+  | "bpm"
+  | "spo2"
   | "battery"
   | "temperature";
 
@@ -31,8 +31,8 @@ interface Rule {
 }
 
 const METRIC_ALIASES: Record<TelemetryMetric, string[]> = {
-  oxygen: ["oxygen", "o2", "o two"],
-  co2: ["co2", "carbon dioxide", "c o two"],
+  bpm: ["heart rate", "pulse", "b p m"],
+  spo2: ["blood oxygen", "oxygen", "spo2", "s p o two"],
   battery: ["battery", "power"],
   temperature: ["temperature", "temp"],
 };

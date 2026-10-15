@@ -7,8 +7,8 @@ interface AnomalyBannerProps {
 }
 
 const LABELS: Record<string, string> = {
-  oxygen: "O₂",
-  co2: "CO₂",
+  bpm: "HR",
+  spo2: "SpO₂",
   battery: "Battery",
   temperature: "Temp",
 };

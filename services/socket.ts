@@ -2,8 +2,8 @@ import { TelemetryAnomaly } from "../backend/data_processing/telemetryManager";
 import { VoiceCommand } from "../backend/voice/commandParser";
 
 export interface Telemetry {
-  oxygen: number;
-  co2: number;
+  bpm: number;
+  spo2: number;
   battery: number;
   temperature: number;
 }

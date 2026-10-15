@@ -7,8 +7,8 @@ interface AlertDisplayProps {
 }
 
 const METRIC_LABELS: Record<string, string> = {
-  oxygen: "OXYGEN",
-  co2: "CO2",
+  bpm: "HR",
+  spo2: "SpO₂",
   battery: "BATTERY",
   temperature: "TEMPERATURE",
 };

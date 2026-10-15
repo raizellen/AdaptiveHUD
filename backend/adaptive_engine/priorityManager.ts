@@ -21,13 +21,13 @@ interface ThresholdRule {
 // cross-checks, etc.) and hand this manager a verdict instead of
 // raw values — the rest of the engine doesn't need to change.
 const THRESHOLDS: Record<TelemetryMetric, ThresholdRule> = {
-  oxygen: {
-    warning: (v) => v < 40,
-    critical: (v) => v < 20,
+  bpm: {
+    warning: (v) => v > 120 || v < 50,
+    critical: (v) => v > 150 || v < 40,
   },
-  co2: {
-    warning: (v) => v > 1.2,
-    critical: (v) => v > 2,
+  spo2: {
+    warning: (v) => v < 94,
+    critical: (v) => v < 90,
   },
   battery: {
     warning: (v) => v < 30,
@@ -56,8 +56,8 @@ export function evaluateTelemetryPriority(
   telemetry: Telemetry
 ): TelemetryPriority[] {
   const metrics: TelemetryMetric[] = [
-    "oxygen",
-    "co2",
+    "bpm",
+    "spo2",
     "battery",
     "temperature",
   ];

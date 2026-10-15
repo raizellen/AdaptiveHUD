@@ -7,15 +7,15 @@ interface TelemetryPanelProps {
 }
 
 const LABELS: Record<string, string> = {
-  oxygen: "O₂",
-  co2: "CO₂",
+  bpm: "HR",
+  spo2: "SpO₂",
   battery: "Battery",
   temperature: "Temp",
 };
 
 const UNITS: Record<string, string> = {
-  oxygen: "%",
-  co2: "%",
+  bpm: "bpm",
+  spo2: "%",
   battery: "%",
   temperature: "°C",
 };

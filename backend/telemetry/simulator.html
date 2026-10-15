@@ -65,13 +65,13 @@
   <h1>EVA Telemetry Simulator</h1>
 
   <div class="field">
-    <label>Oxygen (%) <span id="oxygenVal">92</span></label>
-    <input type="range" id="oxygen" min="0" max="100" value="92" />
+    <label>Heart rate (bpm) <span id="bpmVal">75</span></label>
+    <input type="range" id="bpm" min="30" max="220" value="75" />
   </div>
 
   <div class="field">
-    <label>CO2 (%) <span id="co2Val">0.8</span></label>
-    <input type="range" id="co2" min="0" max="5" step="0.1" value="0.8" />
+    <label>SpO2 (%) <span id="spo2Val">98</span></label>
+    <input type="range" id="spo2" min="70" max="100" value="98" />
   </div>
 
   <div class="field">
@@ -95,16 +95,16 @@
       to test each anomaly type.
     </p>
     <div class="anomaly-buttons">
-      <button onclick="testOutOfRange()">Out-of-range O2 (200%)</button>
-      <button onclick="testInvalidType()">Invalid O2 (non-numeric)</button>
-      <button onclick="testRateSpike()">O2 rate spike (jump 90 in one tick)</button>
-      <button onclick="testCrossCheck()">Cross-check mismatch (CO2 up, O2 unchanged)</button>
+      <button onclick="testOutOfRange()">Out-of-range SpO2 (200%)</button>
+      <button onclick="testInvalidType()">Invalid SpO2 (non-numeric)</button>
+      <button onclick="testRateSpike()">SpO2 rate spike (drop 28 in one tick)</button>
+      <button onclick="testNoSignal()">No finger on sensor (0 bpm, 0 SpO2)</button>
       <button class="reset" onclick="undoAnomaly()">↺ Reset to normal (clear anomaly)</button>
     </div>
   </div>
 
   <script>
-    const fields = ["oxygen", "co2", "battery", "temperature"];
+    const fields = ["bpm", "spo2", "battery", "temperature"];
 
     function send() {
       const payload = {};
@@ -151,25 +151,25 @@
     // --- Anomaly test presets ---
 
     function testOutOfRange() {
-      sendRaw({ oxygen: 200 });
+      sendRaw({ spo2: 200 });
     }
 
     function testInvalidType() {
-      sendRaw({ oxygen: "banana" });
+      sendRaw({ spo2: "out of range" });
     }
 
     async function testRateSpike() {
       // Establish a known baseline, then jump far past the processor's
-      // MAX_DELTA for oxygen (15) in a single reading.
-      await sendRaw({ oxygen: 95 });
-      await sendRaw({ oxygen: 5 });
+      // MAX_DELTA for SpO2 (8) in a single reading.
+      await sendRaw({ spo2: 98 });
+      await sendRaw({ spo2: 60 });
     }
 
-    async function testCrossCheck() {
-      // CO2 rises without oxygen dropping to match — the processor
-      // should flag this as a likely single-sensor fault.
-      await sendRaw({ co2: 0.2, oxygen: 90 });
-      await sendRaw({ co2: 1.9, oxygen: 90 });
+    async function testNoSignal() {
+      // A pulse oximeter with no finger on it reports zeros. Both
+      // values fall below the processor's plausible range, so they
+      // are rejected and the last good readings stay on the HUD.
+      await sendRaw({ bpm: 0, spo2: 0 });
     }
 
     // Restores a plausible baseline reading for every metric — this
@@ -178,7 +178,7 @@
     // dragging one afterward doesn't itself look like a rate spike
     // against whatever a test button last sent.
     function undoAnomaly() {
-      const normal = { oxygen: 98, co2: 0.5, battery: 90, temperature: 21 };
+      const normal = { bpm: 75, spo2: 98, battery: 90, temperature: 21 };
       Object.keys(normal).forEach((f) => {
         const el = document.getElementById(f);
         if (el) {

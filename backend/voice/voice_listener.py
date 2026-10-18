@@ -146,7 +146,7 @@ def parse_args() -> argparse.Namespace:
   parser.add_argument(
     "--host",
     default="localhost",
-    help="Backend host/IP (matches EXPO_PUBLIC_BACKEND_IP in .env)",
+    help="Backend host/IP (default: localhost, as this runs on the same computer as the backend)",
   )
   parser.add_argument(
     "--port",

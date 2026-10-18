@@ -1,6 +1,10 @@
+import Constants from "expo-constants";
+import { Platform } from "react-native";
+
 import { TelemetryAnomaly } from "../backend/data_processing/telemetryManager";
 import { Mission } from "../backend/mission/missionManager";
 import { VoiceCommand } from "../backend/voice/commandParser";
+import { resolveBackendHost } from "./backendHost";
 
 export interface Telemetry {
   bpm: number;
@@ -15,7 +19,20 @@ type IncomingMessage =
   | { type: "telemetry_anomaly"; payload: TelemetryAnomaly[] }
   | { type: "mission"; payload: Mission };
 
-const BACKEND_IP = process.env.EXPO_PUBLIC_BACKEND_IP;
+const BACKEND_PORT = 8080;
+
+// Found automatically from the Expo dev server, so there's no IP to edit
+// each time the laptop's address changes. EXPO_PUBLIC_BACKEND_IP is only
+// a fallback (see backendHost.ts).
+function getBackendUrl(): string {
+  const host = resolveBackendHost({
+    hostUri: Constants.expoConfig?.hostUri,
+    manualIp: process.env.EXPO_PUBLIC_BACKEND_IP,
+    webHostname: Platform.OS === "web" ? window.location.hostname : null,
+  });
+
+  return `ws://${host}:${BACKEND_PORT}`;
+}
 
 interface ConnectHandlers {
   onTelemetry: (data: Telemetry) => void;
@@ -30,7 +47,9 @@ export function connectToBackend({
   onAnomalies,
   onMission,
 }: ConnectHandlers) {
-  const socket = new WebSocket(`ws://${BACKEND_IP}:8080`);
+  const url = getBackendUrl();
+  console.log("Connecting to EVA backend at", url);
+  const socket = new WebSocket(url);
 
   socket.onopen = () => {
     console.log("Connected to EVA backend");

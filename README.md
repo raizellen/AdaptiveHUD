@@ -1,15 +1,22 @@
 ## INSTRUCTIONS
 
   1. install dependencies by running `npm install`
-  2. make a copy of '.env.example' file and rename it as '.env'
-  3. change the listed IP to your machine's IP address.
-  4. download speech recognition toolkit (see below)
-  5. run `npx tsx backend/server.ts`
-  6. keep the backend running and open a new terminal
-  7. run `py backend/voice/voice_listener.py --model models/vosk-model-small-en-us-0.15 --host <your-machine-ip>`
-  8. open another terminal, ensure you are in the root directory and run `npx expo start`
+  2. download speech recognition toolkit (see below)
+  3. run `npm run dev`
 
-Full run order
+That starts the backend, the telemetry processing layer, the voice listener and Expo together. Press Ctrl+C to stop all of them.
+
+There is no IP address to set: the app finds the backend automatically through Expo (it connects to the same computer that is serving the app). `.env` is optional. See `.env.example` for the one case where you need it.
+
+Options:
+  - `npm run dev -- --no-voice`   skip the voice listener (no mic / model yet)
+  - `npm run dev -- --no-expo`    skip Expo (run `npx expo start` yourself)
+  - `npm run dev -- --device 1`   anything else goes to the voice listener
+                                  (here: pick microphone number 1)
+
+Python is found automatically (`py` on Windows, `python3` elsewhere, or a `.venv` folder if you have one). To use a different one, set the `PYTHON` environment variable.
+
+Running the pieces separately (what `npm run dev` does for you)
 # Terminal 1 — backend (HTTP + WebSocket, port 8080)
 npx tsx backend/server.ts
 
@@ -17,7 +24,7 @@ npx tsx backend/server.ts
 py backend/data_processing/telemetryProcessor.py --port 8090
 
 # Terminal 3 — voice listener (no port, just posts to 8080)
-py backend/voice/voice_listener.py --model models/vosk-model-small-en-us-0.15 --host <your-machine-ip>
+py backend/voice/voice_listener.py --model models/vosk-model-small-en-us-0.15
 
 # Terminal 4 — Expo (port 8081, for the phone app bundle)
 npx expo start
@@ -38,7 +45,7 @@ install python packages and vosk model:
   - go to https://alphacephei.com/vosk/models download vosk-model-small-en-us-0.15.zip
   - `unzip vosk-model-small-en-us-0.15.zip -d models/` or manually unzip into project folder/models
 
-targeting a specific micrpophones:
+targeting specific microphones:
   1. run `py backend/voice/voice_listener.py --list-devices`
   2. pass `--device <index number>` when running vosk model
       eg: `py backend/voice/voice_listener.py --model models/vosk-model-small-en-us-0.15 --device 1`

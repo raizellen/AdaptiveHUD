@@ -11,7 +11,10 @@ import sounddevice as sd
 from vosk import KaldiRecognizer, Model
 
 # restricting Vosk to only these phrases (a "grammar") is much more accurate than free-form dictation
-VERBS = ["show", "check", "whats", "display", "hide"]
+VERBS = ["show", "check", "whats", "display", "unhide", "focus", "hide"]
+# Mission and timer panels can be shown, focused or hidden the same way.
+PANELS = ["mission", "timer"]
+PANEL_VERBS = ["show", "display", "focus", "unhide", "hide"]
 METRIC_ALIASES = {
   "bpm": ["heart rate", "pulse", "b p m"],
   "spo2": ["blood oxygen", "oxygen", "spo2", "s p o two"],
@@ -34,6 +37,11 @@ FIXED_PHRASES = [
   "show metrics",
   "show the metrics",
   "show all metrics",
+  "unhide all",
+  "unhide everything",
+  "unhide metrics",
+  "unhide the metrics",
+  "unhide all metrics",
   "hows it looking",
   "acknowledge",
   "clear alert",
@@ -48,6 +56,56 @@ FIXED_PHRASES = [
   "resume alerts",
   "resume the alerts",
 ]
+
+# Timer commands. "set timer for <duration>" needs the durations spelled
+# out because Vosk can only recognize phrases it has been given, so the
+# set below covers the common ones. Anything else can still be typed or
+# sent through the web speech path, which the parser also understands.
+TIMER_VERBS = ["start", "begin", "resume", "pause", "stop", "reset", "restart", "clear"]
+TIMER_SET_PREFIXES = ["set timer for", "set the timer for", "set a timer for"]
+TIMER_MINUTES = list(range(1, 61)) + [75, 90, 120]
+TIMER_SECONDS = [5, 10, 15, 20, 30, 45]
+TIMER_HOURS = [1, 2, 3]
+TIMER_HOUR_EXTRA_MINUTES = [15, 30, 45]
+
+ONES = [
+  "zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
+  "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+  "sixteen", "seventeen", "eighteen", "nineteen",
+]
+TENS = {
+  2: "twenty", 3: "thirty", 4: "forty", 5: "fifty",
+  6: "sixty", 7: "seventy", 8: "eighty", 9: "ninety",
+}
+
+
+def number_to_words(n: int) -> str:
+  """Spell out a number the way Vosk's English model writes it."""
+  if n < 20:
+    return ONES[n]
+  if n < 100:
+    tens, ones = divmod(n, 10)
+    return TENS[tens] if ones == 0 else f"{TENS[tens]} {ONES[ones]}"
+  hundreds, rest = divmod(n, 100)
+  head = f"{ONES[hundreds]} hundred"
+  return head if rest == 0 else f"{head} {number_to_words(rest)}"
+
+
+def unit_phrase(n: int, unit: str) -> str:
+  return f"{number_to_words(n)} {unit}" if n == 1 else f"{number_to_words(n)} {unit}s"
+
+
+def timer_durations() -> set[str]:
+  durations = {"an hour", "half an hour"}
+  for minutes in TIMER_MINUTES:
+    durations.add(unit_phrase(minutes, "minute"))
+  for seconds in TIMER_SECONDS:
+    durations.add(unit_phrase(seconds, "second"))
+  for hours in TIMER_HOURS:
+    durations.add(unit_phrase(hours, "hour"))
+    for minutes in TIMER_HOUR_EXTRA_MINUTES:
+      durations.add(f"{unit_phrase(hours, 'hour')} {unit_phrase(minutes, 'minute')}")
+  return durations
 
 
 def build_grammar() -> list[str]:
@@ -64,6 +122,16 @@ def build_grammar() -> list[str]:
       for alias in aliases:
         phrases.add(f"{verb} {alias}")
         phrases.add(f"{verb} the {alias}")
+  for verb in PANEL_VERBS:
+    for panel in PANELS:
+      phrases.add(f"{verb} {panel}")
+      phrases.add(f"{verb} the {panel}")
+  for verb in TIMER_VERBS:
+    phrases.add(f"{verb} timer")
+    phrases.add(f"{verb} the timer")
+  for prefix in TIMER_SET_PREFIXES:
+    for duration in timer_durations():
+      phrases.add(f"{prefix} {duration}")
   phrases.add("[unk]")
   return sorted(phrases)
 

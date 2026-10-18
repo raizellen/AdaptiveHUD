@@ -1,4 +1,5 @@
 import { TelemetryAnomaly } from "../backend/data_processing/telemetryManager";
+import { Mission } from "../backend/mission/missionManager";
 import { VoiceCommand } from "../backend/voice/commandParser";
 
 export interface Telemetry {
@@ -11,7 +12,8 @@ export interface Telemetry {
 type IncomingMessage =
   | { type: "telemetry"; payload: Telemetry }
   | { type: "voice_command"; payload: VoiceCommand }
-  | { type: "telemetry_anomaly"; payload: TelemetryAnomaly[] };
+  | { type: "telemetry_anomaly"; payload: TelemetryAnomaly[] }
+  | { type: "mission"; payload: Mission };
 
 const BACKEND_IP = process.env.EXPO_PUBLIC_BACKEND_IP;
 
@@ -19,12 +21,14 @@ interface ConnectHandlers {
   onTelemetry: (data: Telemetry) => void;
   onVoiceCommand?: (command: VoiceCommand) => void;
   onAnomalies?: (anomalies: TelemetryAnomaly[]) => void;
+  onMission?: (mission: Mission) => void;
 }
 
 export function connectToBackend({
   onTelemetry,
   onVoiceCommand,
   onAnomalies,
+  onMission,
 }: ConnectHandlers) {
   const socket = new WebSocket(`ws://${BACKEND_IP}:8080`);
 
@@ -46,6 +50,8 @@ export function connectToBackend({
         console.log("Telemetry anomalies received:", message.payload);
       }
       onAnomalies?.(message.payload);
+    } else if (message.type === "mission") {
+      onMission?.(message.payload);
     }
   };
 

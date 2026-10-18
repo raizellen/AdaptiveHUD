@@ -1,4 +1,14 @@
 import { TelemetryMetric, VoiceCommand } from "../voice/commandParser";
+import {
+  clearTimer,
+  createTimer,
+  pauseTimer,
+  resetTimer,
+  restartTimer,
+  setCountdown,
+  startTimer,
+  TimerState,
+} from "./timerManager";
 
 export type MissionState = "idle" | "eva_active" | "eva_complete";
 
@@ -8,8 +18,13 @@ export interface SystemContext {
   acknowledgedAlerts: Set<TelemetryMetric>;
   focusedMetric: TelemetryMetric | null;
   // When true, no metrics are displayed except the focused one (set by
-  // "show <metric>"). "show all" turns this back off.
-  allHidden: boolean;
+  // "show <metric>"). "show metrics" / "show all" turn this back off.
+  metricsHidden: boolean;
+  // The mission details and the timer can be hidden independently. A
+  // hidden timer keeps running; it just isn't drawn.
+  missionHidden: boolean;
+  timerHidden: boolean;
+  timer: TimerState;
 }
 
 export interface VoiceContextAction {
@@ -17,6 +32,9 @@ export interface VoiceContextAction {
   // Metrics currently in warning/critical state, supplied by the
   // caller so ACKNOWLEDGE_ALERT knows what it's acknowledging.
   activeAlertMetrics?: TelemetryMetric[];
+  // When the command was heard (epoch ms), supplied by the caller so
+  // the timer commands don't depend on reading the clock in here.
+  now?: number;
 }
 
 // Dispatched by the engine when metrics return to normal, so that an
@@ -34,7 +52,10 @@ export function createInitialContext(): SystemContext {
     alertsMuted: false,
     acknowledgedAlerts: new Set(),
     focusedMetric: null,
-    allHidden: false,
+    metricsHidden: false,
+    missionHidden: false,
+    timerHidden: false,
+    timer: createTimer(),
   };
 }
 
@@ -50,7 +71,7 @@ export function contextReducer(
     return { ...state, acknowledgedAlerts };
   }
 
-  const { command, activeAlertMetrics = [] } = action;
+  const { command, activeAlertMetrics = [], now = Date.now() } = action;
 
   switch (command.type) {
     case "MUTE_ALERTS":
@@ -70,11 +91,41 @@ export function contextReducer(
       }
       return state;
 
+    // "all" is the metrics, the mission and the timer together.
     case "HIDE_ALL":
-      return { ...state, allHidden: true, focusedMetric: null };
+      return {
+        ...state,
+        metricsHidden: true,
+        focusedMetric: null,
+        missionHidden: true,
+        timerHidden: true,
+      };
 
     case "SHOW_ALL":
-      return { ...state, allHidden: false };
+      return {
+        ...state,
+        metricsHidden: false,
+        missionHidden: false,
+        timerHidden: false,
+      };
+
+    case "HIDE_METRICS":
+      return { ...state, metricsHidden: true, focusedMetric: null };
+
+    case "SHOW_METRICS":
+      return { ...state, metricsHidden: false };
+
+    case "HIDE_MISSION":
+      return { ...state, missionHidden: true };
+
+    case "SHOW_MISSION":
+      return { ...state, missionHidden: false };
+
+    case "HIDE_TIMER":
+      return { ...state, timerHidden: true };
+
+    case "SHOW_TIMER":
+      return { ...state, timerHidden: false };
 
     case "ACKNOWLEDGE_ALERT": {
       const acknowledgedAlerts = new Set(state.acknowledgedAlerts);
@@ -83,6 +134,28 @@ export function contextReducer(
       );
       return { ...state, acknowledgedAlerts };
     }
+
+    case "TIMER_START":
+      return { ...state, timer: startTimer(state.timer, now) };
+
+    case "TIMER_PAUSE":
+      return { ...state, timer: pauseTimer(state.timer, now) };
+
+    case "TIMER_RESET":
+      return { ...state, timer: resetTimer(state.timer) };
+
+    case "TIMER_RESTART":
+      return { ...state, timer: restartTimer(state.timer, now) };
+
+    case "TIMER_CLEAR":
+      return { ...state, timer: clearTimer() };
+
+    case "TIMER_SET":
+      if (!command.durationSeconds) return state;
+      return {
+        ...state,
+        timer: setCountdown(command.durationSeconds * 1000),
+      };
 
     case "STATUS_REPORT":
     case "UNKNOWN":

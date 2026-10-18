@@ -3,11 +3,15 @@ import { StyleSheet, Text, View } from "react-native";
 import { HUDState } from "../backend/adaptive_engine/displayStateManager";
 import { DisplayItem } from "../backend/adaptive_engine/informationManager";
 import { TelemetryPriority } from "../backend/adaptive_engine/priorityManager";
+import { TimerState } from "../backend/adaptive_engine/timerManager";
 import { TelemetryAnomaly } from "../backend/data_processing/telemetryManager";
+import { Mission } from "../backend/mission/missionManager";
 import { VoiceCommand } from "../backend/voice/commandParser";
 import { Telemetry } from "../services/socket";
 import AlertDisplay from "./AlertDisplay";
 import AnomalyBanner from "./AnomalyBanner";
+import MissionPanel from "./MissionPanel";
+import MissionTimer from "./MissionTimer";
 import TelemetryPanel from "./TelemetryPanel";
 
 interface MainHUDProps {
@@ -15,6 +19,8 @@ interface MainHUDProps {
   displayItems: DisplayItem[];
   activeAlerts: TelemetryPriority[];
   anomalies?: TelemetryAnomaly[];
+  mission?: Mission | null;
+  timer?: TimerState;
   hudState: HUDState;
   onVoiceCommand?: (command: VoiceCommand) => void;
 }
@@ -46,6 +52,8 @@ export default function MainHUD({
   displayItems,
   activeAlerts,
   anomalies = [],
+  mission = null,
+  timer,
   hudState,
   onVoiceCommand,
 }: MainHUDProps) {
@@ -79,8 +87,10 @@ export default function MainHUD({
 
           <View style={styles.lowerContainer}>
             <View style={styles.body}>
-              <View style={styles.telemetryColumn}>
-                <TelemetryPanel items={displayItems} />
+              
+              <View style={styles.missionColumn}>
+                {timer && <MissionTimer timer={timer} />}
+                <MissionPanel mission={mission} />
               </View>
 
               <View style={styles.fieldContainer}>
@@ -106,7 +116,8 @@ export default function MainHUD({
                 </View>
               </View>
 
-              <View style={styles.missionColumn}>
+              <View style={styles.telemetryColumn}>
+                <TelemetryPanel items={displayItems} />
               </View>
             </View>
           </View>
@@ -147,7 +158,7 @@ const styles = StyleSheet.create({
   },
 
   fieldContainer: {
-    flex: 2,
+    flex: 1.6,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -179,15 +190,14 @@ const styles = StyleSheet.create({
   },
 
   telemetryColumn: {
-    flex: 1,
+    flex: 1.4,
     justifyContent: "center",
-    paddingHorizontal: 32,
   },
 
   missionColumn: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 40,
   },
 });

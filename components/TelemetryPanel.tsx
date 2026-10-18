@@ -49,13 +49,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    gap: 12,
+    gap: 8,
   },
 
   card: {
     alignItems: "center",
     justifyContent: "center",
-    width: 90,
+    width: 105,
     height: 80,
   },
 

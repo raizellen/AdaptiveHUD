@@ -23,6 +23,44 @@
   input[type="range"] { width: 100%; }
   .status { margin-top: 2rem; font-size: 0.85rem; color: #8f8; }
 
+  .mission-section {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #333;
+  }
+  .mission-section h2 {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+  .mission-section label {
+    display: block;
+    margin-bottom: 0.4rem;
+  }
+  .mission-section input[type="text"],
+  .mission-section textarea {
+    width: 100%;
+    box-sizing: border-box;
+    background: #1a1a1a;
+    color: #eee;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 0.5rem;
+    font: inherit;
+    font-size: 0.9rem;
+  }
+  .mission-section textarea { resize: vertical; min-height: 4.5rem; }
+  .mission-section button {
+    background: #1a1a1a;
+    color: #eee;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .mission-section button:hover { background: #262626; }
+  .mission-status { margin-top: 0.75rem; font-size: 0.85rem; color: #8f8; }
+
   .anomaly-section {
     margin-top: 2.5rem;
     padding-top: 1.5rem;
@@ -63,6 +101,23 @@
 </head>
 <body>
   <h1>EVA Telemetry Simulator</h1>
+
+  <div class="mission-section">
+    <h2>Mission details</h2>
+
+    <div class="field">
+      <label for="missionTitle">Title</label>
+      <input type="text" id="missionTitle" maxlength="80" />
+    </div>
+
+    <div class="field">
+      <label for="missionObjective">Objective</label>
+      <textarea id="missionObjective" maxlength="300"></textarea>
+    </div>
+
+    <button onclick="updateMission()">Update mission</button>
+    <div class="mission-status" id="missionStatus"></div>
+  </div>
 
   <div class="field">
     <label>Heart rate (bpm) <span id="bpmVal">75</span></label>
@@ -147,6 +202,60 @@
     fields.forEach((f) => {
       document.getElementById(f).addEventListener("input", send);
     });
+
+    // --- Mission details ---
+
+    function setMissionStatus(text) {
+      document.getElementById("missionStatus").textContent = text;
+    }
+
+    function fillMissionFields(mission) {
+      document.getElementById("missionTitle").value = mission.title;
+      document.getElementById("missionObjective").value = mission.objective;
+    }
+
+    // Start from whatever the HUD is currently showing, so pressing
+    // Update after editing only one field doesn't overwrite the other.
+    fetch("/mission")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.ok) fillMissionFields(data.mission);
+      })
+      .catch(() => {
+        setMissionStatus(
+          "Couldn't load mission — is backend/server.ts running?"
+        );
+      });
+
+    function updateMission() {
+      const payload = {
+        title: document.getElementById("missionTitle").value,
+        objective: document.getElementById("missionObjective").value,
+      };
+
+      return fetch("/mission", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.ok) {
+            // Show the server's cleaned-up version (trimmed, length-capped).
+            fillMissionFields(data.mission);
+            setMissionStatus(
+              "Mission updated " + new Date().toLocaleTimeString()
+            );
+          } else {
+            setMissionStatus("Not updated: " + data.error);
+          }
+        })
+        .catch(() => {
+          setMissionStatus(
+            "Error updating mission — is backend/server.ts running?"
+          );
+        });
+    }
 
     // --- Anomaly test presets ---
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { TelemetryAnomaly } from "./backend/data_processing/telemetryManager";
+import { Mission } from "./backend/mission/missionManager";
 import { VoiceCommand } from "./backend/voice/commandParser";
 import MainHUD from "./components/MainHUD";
 import { useAdaptiveHUD } from "./services/adaptiveHUDEngine";
@@ -13,6 +14,7 @@ export default function App() {
   const [telemetry, setTelemetry] =
     useState<Telemetry | null>(null);
   const [anomalies, setAnomalies] = useState<TelemetryAnomaly[]>([]);
+  const [mission, setMission] = useState<Mission | null>(null);
 
   const {
     displayItems,
@@ -33,6 +35,7 @@ export default function App() {
       onVoiceCommand: (command: VoiceCommand) =>
         handleVoiceCommandRef.current(command),
       onAnomalies: setAnomalies,
+      onMission: setMission,
     });
 
     return () => {
@@ -46,6 +49,7 @@ export default function App() {
       displayItems={displayItems}
       activeAlerts={activeAlerts}
       anomalies={anomalies}
+      mission={mission}
       hudState={hudState}
       onVoiceCommand={handleVoiceCommand}
     />

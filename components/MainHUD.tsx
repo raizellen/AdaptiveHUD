@@ -4,10 +4,12 @@ import { HUDState } from "../backend/adaptive_engine/displayStateManager";
 import { DisplayItem } from "../backend/adaptive_engine/informationManager";
 import { TelemetryPriority } from "../backend/adaptive_engine/priorityManager";
 import { TelemetryAnomaly } from "../backend/data_processing/telemetryManager";
+import { Mission } from "../backend/mission/missionManager";
 import { VoiceCommand } from "../backend/voice/commandParser";
 import { Telemetry } from "../services/socket";
 import AlertDisplay from "./AlertDisplay";
 import AnomalyBanner from "./AnomalyBanner";
+import MissionPanel from "./MissionPanel";
 import TelemetryPanel from "./TelemetryPanel";
 
 interface MainHUDProps {
@@ -15,6 +17,7 @@ interface MainHUDProps {
   displayItems: DisplayItem[];
   activeAlerts: TelemetryPriority[];
   anomalies?: TelemetryAnomaly[];
+  mission?: Mission | null;
   hudState: HUDState;
   onVoiceCommand?: (command: VoiceCommand) => void;
 }
@@ -46,6 +49,7 @@ export default function MainHUD({
   displayItems,
   activeAlerts,
   anomalies = [],
+  mission = null,
   hudState,
   onVoiceCommand,
 }: MainHUDProps) {
@@ -107,6 +111,7 @@ export default function MainHUD({
               </View>
 
               <View style={styles.missionColumn}>
+                <MissionPanel mission={mission} />
               </View>
             </View>
           </View>

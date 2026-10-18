@@ -87,8 +87,10 @@ export default function MainHUD({
 
           <View style={styles.lowerContainer}>
             <View style={styles.body}>
-              <View style={styles.telemetryColumn}>
-                <TelemetryPanel items={displayItems} />
+              
+              <View style={styles.missionColumn}>
+                {timer && <MissionTimer timer={timer} />}
+                <MissionPanel mission={mission} />
               </View>
 
               <View style={styles.fieldContainer}>
@@ -114,9 +116,8 @@ export default function MainHUD({
                 </View>
               </View>
 
-              <View style={styles.missionColumn}>
-                {timer && <MissionTimer timer={timer} />}
-                <MissionPanel mission={mission} />
+              <View style={styles.telemetryColumn}>
+                <TelemetryPanel items={displayItems} />
               </View>
             </View>
           </View>
@@ -157,7 +158,7 @@ const styles = StyleSheet.create({
   },
 
   fieldContainer: {
-    flex: 2,
+    flex: 1.6,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -189,15 +190,14 @@ const styles = StyleSheet.create({
   },
 
   telemetryColumn: {
-    flex: 1,
+    flex: 1.4,
     justifyContent: "center",
-    paddingHorizontal: 32,
   },
 
   missionColumn: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 40,
   },
 });

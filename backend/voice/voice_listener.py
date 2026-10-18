@@ -11,7 +11,10 @@ import sounddevice as sd
 from vosk import KaldiRecognizer, Model
 
 # restricting Vosk to only these phrases (a "grammar") is much more accurate than free-form dictation
-VERBS = ["show", "check", "whats", "display", "hide"]
+VERBS = ["show", "check", "whats", "display", "unhide", "focus", "hide"]
+# Mission and timer panels can be shown, focused or hidden the same way.
+PANELS = ["mission", "timer"]
+PANEL_VERBS = ["show", "display", "focus", "unhide", "hide"]
 METRIC_ALIASES = {
   "bpm": ["heart rate", "pulse", "b p m"],
   "spo2": ["blood oxygen", "oxygen", "spo2", "s p o two"],
@@ -34,6 +37,11 @@ FIXED_PHRASES = [
   "show metrics",
   "show the metrics",
   "show all metrics",
+  "unhide all",
+  "unhide everything",
+  "unhide metrics",
+  "unhide the metrics",
+  "unhide all metrics",
   "hows it looking",
   "acknowledge",
   "clear alert",
@@ -114,6 +122,10 @@ def build_grammar() -> list[str]:
       for alias in aliases:
         phrases.add(f"{verb} {alias}")
         phrases.add(f"{verb} the {alias}")
+  for verb in PANEL_VERBS:
+    for panel in PANELS:
+      phrases.add(f"{verb} {panel}")
+      phrases.add(f"{verb} the {panel}")
   for verb in TIMER_VERBS:
     phrases.add(f"{verb} timer")
     phrases.add(f"{verb} the timer")

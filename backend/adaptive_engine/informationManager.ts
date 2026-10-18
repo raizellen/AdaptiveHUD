@@ -9,7 +9,7 @@ export interface DisplayItem {
   highlighted: boolean;
 }
 
-// Reduces clutter: anything abnormal is shown (unless everything has
+// Reduces clutter: anything abnormal is shown (unless the metrics have
 // been hidden by voice, see below). If the crew
 // asked to focus on a metric by voice, that one gets bubbled to the
 // top regardless of severity. Otherwise remaining slots fill with
@@ -26,9 +26,9 @@ export function selectDisplayInformation(
     highlighted: p.metric === context.focusedMetric,
   }));
 
-  // "hide all": only a metric explicitly requested with "show <metric>"
-  // is displayed.
-  if (context.allHidden) {
+  // "hide metrics" / "hide all": only a metric explicitly requested
+  // with "show <metric>" is displayed.
+  if (context.metricsHidden) {
     return items.filter((i) => i.highlighted);
   }
 

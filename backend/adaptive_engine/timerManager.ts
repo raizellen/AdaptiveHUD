@@ -79,8 +79,9 @@ export function restartTimer(timer: TimerState, now: number): TimerState {
   return startTimer(resetTimer(timer), now);
 }
 
-// Sets a countdown and starts it straight away.
-export function setCountdown(durationMs: number, now: number): TimerState {
+// Loads a countdown but leaves it stopped; "start timer" runs it. Any
+// time already on the clock is discarded.
+export function setCountdown(durationMs: number): TimerState {
   return { durationMs, accumulatedMs: 0, startedAt: null };
 }
 

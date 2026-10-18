@@ -50,8 +50,8 @@ export default function App() {
       displayItems={displayItems}
       activeAlerts={activeAlerts}
       anomalies={anomalies}
-      mission={mission}
-      timer={context.timer}
+      mission={context.missionHidden ? null : mission}
+      timer={context.timerHidden ? undefined : context.timer}
       hudState={hudState}
       onVoiceCommand={handleVoiceCommand}
     />

@@ -5,6 +5,12 @@ export type VoiceCommandType =
   | "HIDE_METRIC"
   | "HIDE_ALL"
   | "SHOW_ALL"
+  | "HIDE_METRICS"
+  | "SHOW_METRICS"
+  | "HIDE_MISSION"
+  | "SHOW_MISSION"
+  | "HIDE_TIMER"
+  | "SHOW_TIMER"
   | "MUTE_ALERTS"
   | "UNMUTE_ALERTS"
   | "TIMER_START"
@@ -142,7 +148,7 @@ function buildMetricRules(): Rule[] {
           metric,
           patterns: [
             new RegExp(
-              `(show|check|whats|display)\\s+(the\\s+)?${alias}`
+              `(show|check|whats|display|unhide|focus)\\s+(the\\s+)?${alias}`
             ),
           ],
         });
@@ -174,19 +180,48 @@ const RULES: Rule[] = [
       /\b(acknowledge|clear alert|dismiss alert|copy that)\b/,
     ],
   },
+  // Visibility. "all" / "everything" means the metrics, the mission and
+  // the timer. "all metrics" and "all alerts" are excluded from it so
+  // they land on the right rule instead. "unhide" can't match the hide
+  // rules because \b doesn't match inside a word.
   {
-    // "hide all alerts" / "show all alerts" are deliberately excluded so
-    // they don't get mistaken for metric visibility commands.
     type: "HIDE_ALL",
     patterns: [
-      /\bhide\s+(the\s+)?(all|everything|metrics)\b(?!\s+alerts?\b)/,
+      /\bhide\s+(the\s+)?(all|everything)\b(?!\s+(alerts?|metrics)\b)/,
     ],
   },
   {
     type: "SHOW_ALL",
     patterns: [
-      /\b(show|display)\s+(me\s+)?(the\s+)?(all|everything|metrics)\b(?!\s+alerts?\b)/,
+      /\b(show|display|unhide)\s+(me\s+)?(the\s+)?(all|everything)\b(?!\s+(alerts?|metrics)\b)/,
     ],
+  },
+  {
+    // Telemetry readouts only; the mission and timer stay as they are.
+    type: "HIDE_METRICS",
+    patterns: [/\bhide\s+(the\s+)?(all\s+)?metrics\b/],
+  },
+  {
+    type: "SHOW_METRICS",
+    patterns: [
+      /\b(show|display|unhide)\s+(me\s+)?(the\s+)?(all\s+)?metrics\b/,
+    ],
+  },
+  {
+    type: "HIDE_MISSION",
+    patterns: [/\bhide\s+(the\s+)?mission\b/],
+  },
+  {
+    type: "SHOW_MISSION",
+    patterns: [/\b(show|display|focus|unhide)\s+(the\s+)?mission\b/],
+  },
+  {
+    type: "HIDE_TIMER",
+    patterns: [/\bhide\s+(the\s+)?timer\b/],
+  },
+  {
+    type: "SHOW_TIMER",
+    patterns: [/\b(show|display|focus|unhide)\s+(the\s+)?timer\b/],
   },
   // "start" also covers resume. "restart" can't be caught by the start
   // rule because \b doesn't match inside a word.

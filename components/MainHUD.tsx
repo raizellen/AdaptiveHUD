@@ -9,7 +9,6 @@ import { Telemetry } from "../services/socket";
 import AlertDisplay from "./AlertDisplay";
 import AnomalyBanner from "./AnomalyBanner";
 import TelemetryPanel from "./TelemetryPanel";
-import VoiceControlPanel from "./VoiceControlPanel";
 
 interface MainHUDProps {
   telemetry: Telemetry | null;
@@ -107,8 +106,7 @@ export default function MainHUD({
                 </View>
               </View>
 
-              <View style={styles.voiceColumn}>
-                <VoiceControlPanel onCommand={onVoiceCommand} />
+              <View style={styles.missionColumn}>
               </View>
             </View>
           </View>
@@ -186,7 +184,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
 
-  voiceColumn: {
+  missionColumn: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",

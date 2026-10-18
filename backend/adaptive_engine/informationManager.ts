@@ -9,7 +9,8 @@ export interface DisplayItem {
   highlighted: boolean;
 }
 
-// Reduces clutter: anything abnormal always gets shown. If the crew
+// Reduces clutter: anything abnormal is shown (unless everything has
+// been hidden by voice, see below). If the crew
 // asked to focus on a metric by voice, that one gets bubbled to the
 // top regardless of severity. Otherwise remaining slots fill with
 // normal-status metrics up to maxItems.
@@ -24,6 +25,12 @@ export function selectDisplayInformation(
     level: p.level,
     highlighted: p.metric === context.focusedMetric,
   }));
+
+  // "hide all": only a metric explicitly requested with "show <metric>"
+  // is displayed.
+  if (context.allHidden) {
+    return items.filter((i) => i.highlighted);
+  }
 
   if (context.focusedMetric) {
     const focused = items.filter((i) => i.highlighted);

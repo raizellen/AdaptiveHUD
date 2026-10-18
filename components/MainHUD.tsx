@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { HUDState } from "../backend/adaptive_engine/displayStateManager";
 import { DisplayItem } from "../backend/adaptive_engine/informationManager";
 import { TelemetryPriority } from "../backend/adaptive_engine/priorityManager";
+import { TimerState } from "../backend/adaptive_engine/timerManager";
 import { TelemetryAnomaly } from "../backend/data_processing/telemetryManager";
 import { Mission } from "../backend/mission/missionManager";
 import { VoiceCommand } from "../backend/voice/commandParser";
@@ -10,6 +11,7 @@ import { Telemetry } from "../services/socket";
 import AlertDisplay from "./AlertDisplay";
 import AnomalyBanner from "./AnomalyBanner";
 import MissionPanel from "./MissionPanel";
+import MissionTimer from "./MissionTimer";
 import TelemetryPanel from "./TelemetryPanel";
 
 interface MainHUDProps {
@@ -18,6 +20,7 @@ interface MainHUDProps {
   activeAlerts: TelemetryPriority[];
   anomalies?: TelemetryAnomaly[];
   mission?: Mission | null;
+  timer?: TimerState;
   hudState: HUDState;
   onVoiceCommand?: (command: VoiceCommand) => void;
 }
@@ -50,6 +53,7 @@ export default function MainHUD({
   activeAlerts,
   anomalies = [],
   mission = null,
+  timer,
   hudState,
   onVoiceCommand,
 }: MainHUDProps) {
@@ -111,6 +115,7 @@ export default function MainHUD({
               </View>
 
               <View style={styles.missionColumn}>
+                {timer && <MissionTimer timer={timer} />}
                 <MissionPanel mission={mission} />
               </View>
             </View>

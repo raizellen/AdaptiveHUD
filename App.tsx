@@ -17,6 +17,7 @@ export default function App() {
   const [mission, setMission] = useState<Mission | null>(null);
 
   const {
+    context,
     displayItems,
     activeAlerts,
     hudState,
@@ -50,6 +51,7 @@ export default function App() {
       activeAlerts={activeAlerts}
       anomalies={anomalies}
       mission={mission}
+      timer={context.timer}
       hudState={hudState}
       onVoiceCommand={handleVoiceCommand}
     />

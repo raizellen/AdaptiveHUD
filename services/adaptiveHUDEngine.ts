@@ -87,7 +87,7 @@ export function useAdaptiveHUD(
         .filter((p) => p.level !== "normal")
         .map((p) => p.metric);
 
-      dispatch({ command, activeAlertMetrics });
+      dispatch({ command, activeAlertMetrics, now: Date.now() });
     },
     [priorities]
   );

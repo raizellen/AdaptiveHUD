@@ -1,13 +1,10 @@
-// TODO:
-// - completely hide
-// - acknowledge shouldn't permanently remove warnings
-// - hide_metrics currently hiding irregardless if it is the current displayed metric
-
 export type VoiceCommandType =
   | "STATUS_REPORT"
   | "ACKNOWLEDGE_ALERT"
   | "FOCUS_METRIC"
   | "HIDE_METRIC"
+  | "HIDE_ALL"
+  | "SHOW_ALL"
   | "MUTE_ALERTS"
   | "UNMUTE_ALERTS"
   | "UNKNOWN";
@@ -63,9 +60,7 @@ function buildMetricRules(): Rule[] {
           type: "HIDE_METRIC",
           metric,
           patterns: [
-            new RegExp(
-              `(hide)\\s+(the\\s+)?${alias}` // fix to just hide
-            ),
+            new RegExp(`hide\\s+(the\\s+)?${alias}`),
           ],
         });
       });
@@ -82,9 +77,25 @@ const RULES: Rule[] = [
     patterns: [/\b(status report|status|report|hows it looking)\b/],
   },
   {
-    type: "ACKNOWLEDGE_ALERT", // acknowledge temp dismisses, show again if went back to normal then new alert
+    // Acknowledging only dismisses the current alert. It comes back if
+    // the metric returns to normal and then goes abnormal again.
+    type: "ACKNOWLEDGE_ALERT",
     patterns: [
       /\b(acknowledge|clear alert|dismiss alert|copy that)\b/,
+    ],
+  },
+  {
+    // "hide all alerts" / "show all alerts" are deliberately excluded so
+    // they don't get mistaken for metric visibility commands.
+    type: "HIDE_ALL",
+    patterns: [
+      /\bhide\s+(the\s+)?(all|everything|metrics)\b(?!\s+alerts?\b)/,
+    ],
+  },
+  {
+    type: "SHOW_ALL",
+    patterns: [
+      /\b(show|display)\s+(me\s+)?(the\s+)?(all|everything|metrics)\b(?!\s+alerts?\b)/,
     ],
   },
   {

@@ -1,0 +1,198 @@
+diff --git a/backend/server.ts b/backend/server.ts
+index 4509b08..3bb29fc 100644
+--- a/backend/server.ts
++++ b/backend/server.ts
+@@ -18,6 +18,7 @@ const PORT = 8080;
+ const TELEMETRY_FILE = path.join(__dirname, "telemetry", "telemetry.json");
+ const MISSION_FILE = path.join(__dirname, "telemetry", "mission.json");
+ const SIMULATOR_FILE = path.join(__dirname, "telemetry", "simulator.html");
++const LATENCY_FILE = path.join(__dirname, "telemetry", "voice_latency.csv");
+ const VOICE_SIMULATOR_FILE = path.join(
+   __dirname,
+   "voice",
+@@ -34,7 +35,7 @@ export interface Telemetry {
+ // Every WS message is tagged so the phone knows how to route it.
+ type OutgoingMessage =
+   | { type: "telemetry"; payload: Telemetry }
+-  | { type: "voice_command"; payload: VoiceCommand }
++  | { type: "voice_command"; payload: VoiceCommand; id?: string }
+   | { type: "telemetry_anomaly"; payload: TelemetryAnomaly[] }
+   | { type: "mission"; payload: Mission };
+ 
+@@ -62,6 +63,53 @@ function saveMission(data: Mission) {
+   fs.writeFileSync(MISSION_FILE, JSON.stringify(data, null, 2));
+ }
+ 
++// Voice latency. Each voice_command is tagged with an id; the HUD replies
++// with a voice_ack once it has applied the command. Everything is measured
++// on this laptop's clock, so the phone's clock doesn't matter.
++interface PendingVoice {
++  text: string;
++  type: string;
++  recognisedAt?: number;
++  receivedAt: number;
++  broadcastAt: number;
++}
++const pendingVoice = new Map<string, PendingVoice>();
++let voiceCounter = 0;
++
++function logVoiceLatency(p: PendingVoice, ackAt: number) {
++  const toServer =
++    p.recognisedAt !== undefined ? p.receivedAt - p.recognisedAt : NaN;
++  const roundTrip = ackAt - p.broadcastAt;
++  // The round trip covers laptop -> phone -> laptop, so half is the
++  // laptop -> phone leg.
++  const total = (Number.isNaN(toServer) ? 0 : toServer) + roundTrip / 2;
++
++  console.log(
++    `Voice latency: "${p.text}" (${p.type}) ` +
++      `listener->server ${Number.isNaN(toServer) ? "n/a" : toServer.toFixed(0) + " ms"}, ` +
++      `server->HUD->server ${roundTrip} ms, ` +
++      `estimated total ${total.toFixed(0)} ms`
++  );
++
++  try {
++    if (!fs.existsSync(LATENCY_FILE)) {
++      fs.writeFileSync(
++        LATENCY_FILE,
++        "time,text,command,listener_to_server_ms,round_trip_ms,estimated_total_ms\n"
++      );
++    }
++    const safeText = p.text.replace(/"/g, "'");
++    fs.appendFileSync(
++      LATENCY_FILE,
++      `${new Date().toISOString()},"${safeText}",${p.type},` +
++        `${Number.isNaN(toServer) ? "" : toServer.toFixed(0)},` +
++        `${roundTrip},${total.toFixed(0)}\n`
++    );
++  } catch {
++    // Logging must never break the HUD.
++  }
++}
++
+ let currentTelemetry: Telemetry = loadTelemetry();
+ let currentMission: Mission = loadMission();
+ 
+@@ -165,9 +213,26 @@ const httpServer = http.createServer(async (req, res) => {
+   if (req.method === "POST" && req.url === "/voice-transcript") {
+     const body = await readBody(req);
+     try {
+-      const { text } = JSON.parse(body);
++      const { text, recognisedAt } = JSON.parse(body);
++      const receivedAt = Date.now();
+       const command = parseVoiceCommand(text ?? "");
+-      broadcast({ type: "voice_command", payload: command });
++
++      const id = String(++voiceCounter);
++      const broadcastAt = Date.now();
++      pendingVoice.set(id, {
++        text: text ?? "",
++        type: command.type,
++        recognisedAt:
++          typeof recognisedAt === "number" ? recognisedAt : undefined,
++        receivedAt,
++        broadcastAt,
++      });
++      // Don't let unanswered ids (no HUD connected) pile up.
++      if (pendingVoice.size > 50) {
++        pendingVoice.delete(pendingVoice.keys().next().value as string);
++      }
++
++      broadcast({ type: "voice_command", payload: command, id });
+ 
+       console.log(`Voice transcript: "${text}" -> ${command.type}`);
+ 
+@@ -196,6 +261,21 @@ wss.on("connection", (socket) => {
+     JSON.stringify({ type: "mission", payload: currentMission })
+   );
+ 
++  socket.on("message", (raw) => {
++    try {
++      const message = JSON.parse(raw.toString());
++      if (message.type === "voice_ack" && typeof message.id === "string") {
++        const pending = pendingVoice.get(message.id);
++        if (pending) {
++          pendingVoice.delete(message.id);
++          logVoiceLatency(pending, Date.now());
++        }
++      }
++    } catch {
++      // Ignore malformed messages from clients.
++    }
++  });
++
+   socket.on("close", () => {
+     console.log("HUD disconnected");
+   });
+diff --git a/backend/voice/voice_listener.py b/backend/voice/voice_listener.py
+index 81eb6ca..759d972 100644
+--- a/backend/voice/voice_listener.py
++++ b/backend/voice/voice_listener.py
+@@ -3,6 +3,7 @@
+ 
+ import argparse
+ import json
++import time
+ import queue
+ import sys
+ 
+@@ -187,10 +188,18 @@ def parse_args() -> argparse.Namespace:
+   return parser.parse_args()
+ 
+ 
+-def send_transcript(url: str, text: str) -> None:
+-  """POST a recognized phrase to the same endpoint voice-simulator.html uses."""
++def send_transcript(url: str, text: str, recognised_at_ms: float) -> None:
++  """POST a recognized phrase to the same endpoint voice-simulator.html uses.
++
++  recognised_at_ms is when Vosk finished the phrase; the server uses it to
++  report how long the command took to reach it (same laptop, same clock).
++  """
+   try:
+-    response = requests.post(url, json={"text": text}, timeout=5)
++    response = requests.post(
++      url,
++      json={"text": text, "recognisedAt": recognised_at_ms},
++      timeout=5,
++    )
+     response.raise_for_status()
+     command = response.json().get("command", {})
+     print(f'  "{text}" -> {command.get("type", "ERROR")}')
+@@ -251,10 +260,11 @@ def main() -> None:
+       while True:
+         data = audio_queue.get()
+         if recognizer.AcceptWaveform(data):
++          recognised_at_ms = time.time() * 1000
+           result = json.loads(recognizer.Result())
+           text = result.get("text", "").strip()
+           if text:
+-            send_transcript(endpoint, text)
++            send_transcript(endpoint, text, recognised_at_ms)
+         else:
+           # Partial result — mirrors the "interim" transcript
+           # shown live in the HTML simulator.
+diff --git a/services/socket.ts b/services/socket.ts
+index 09c6ea5..4b9a6d1 100644
+--- a/services/socket.ts
++++ b/services/socket.ts
+@@ -15,7 +15,7 @@ export interface Telemetry {
+ 
+ type IncomingMessage =
+   | { type: "telemetry"; payload: Telemetry }
+-  | { type: "voice_command"; payload: VoiceCommand }
++  | { type: "voice_command"; payload: VoiceCommand; id?: string }
+   | { type: "telemetry_anomaly"; payload: TelemetryAnomaly[] }
+   | { type: "mission"; payload: Mission };
+ 
+@@ -64,6 +64,11 @@ export function connectToBackend({
+     } else if (message.type === "voice_command") {
+       console.log("Remote voice command received:", message.payload);
+       onVoiceCommand?.(message.payload);
++      // Tell the backend the command has been applied so it can log how
++      // long the voice command took (see logVoiceLatency in server.ts).
++      if (message.id && socket.readyState === WebSocket.OPEN) {
++        socket.send(JSON.stringify({ type: "voice_ack", id: message.id }));
++      }
+     } else if (message.type === "telemetry_anomaly") {
+       if (message.payload.length > 0) {
+         console.log("Telemetry anomalies received:", message.payload);

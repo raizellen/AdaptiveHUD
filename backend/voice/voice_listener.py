@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import time
 import queue
 import sys
 
@@ -187,10 +188,18 @@ def parse_args() -> argparse.Namespace:
   return parser.parse_args()
 
 
-def send_transcript(url: str, text: str) -> None:
-  """POST a recognized phrase to the same endpoint voice-simulator.html uses."""
+def send_transcript(url: str, text: str, recognised_at_ms: float) -> None:
+  """POST a recognized phrase to the same endpoint voice-simulator.html uses.
+
+  recognised_at_ms is when Vosk finished the phrase; the server uses it to
+  report how long the command took to reach it (same laptop, same clock).
+  """
   try:
-    response = requests.post(url, json={"text": text}, timeout=5)
+    response = requests.post(
+      url,
+      json={"text": text, "recognisedAt": recognised_at_ms},
+      timeout=5,
+    )
     response.raise_for_status()
     command = response.json().get("command", {})
     print(f'  "{text}" -> {command.get("type", "ERROR")}')
@@ -251,10 +260,11 @@ def main() -> None:
       while True:
         data = audio_queue.get()
         if recognizer.AcceptWaveform(data):
+          recognised_at_ms = time.time() * 1000
           result = json.loads(recognizer.Result())
           text = result.get("text", "").strip()
           if text:
-            send_transcript(endpoint, text)
+            send_transcript(endpoint, text, recognised_at_ms)
         else:
           # Partial result — mirrors the "interim" transcript
           # shown live in the HTML simulator.

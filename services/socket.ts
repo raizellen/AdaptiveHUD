@@ -15,7 +15,7 @@ export interface Telemetry {
 
 type IncomingMessage =
   | { type: "telemetry"; payload: Telemetry }
-  | { type: "voice_command"; payload: VoiceCommand }
+  | { type: "voice_command"; payload: VoiceCommand; id?: string }
   | { type: "telemetry_anomaly"; payload: TelemetryAnomaly[] }
   | { type: "mission"; payload: Mission };
 
@@ -64,6 +64,11 @@ export function connectToBackend({
     } else if (message.type === "voice_command") {
       console.log("Remote voice command received:", message.payload);
       onVoiceCommand?.(message.payload);
+      // Tell the backend the command has been applied so it can log how
+      // long the voice command took (see logVoiceLatency in server.ts).
+      if (message.id && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: "voice_ack", id: message.id }));
+      }
     } else if (message.type === "telemetry_anomaly") {
       if (message.payload.length > 0) {
         console.log("Telemetry anomalies received:", message.payload);

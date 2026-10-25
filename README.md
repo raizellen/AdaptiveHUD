@@ -1,4 +1,10 @@
-## INSTRUCTIONS
+# Adaptive HUD
+
+An adaptive heads-up display interface designed for an astronaut suit in extravehicular activities. The adaptive engine features a context manager, telemetry prioritisation, information manager and a display state manager.
+
+Created for Engineering Capstone: Designing an Astronaut Suit.
+
+## Instructions
 
   1. install dependencies by running `npm install`
   2. download speech recognition toolkit (see below)
@@ -17,20 +23,20 @@ Options:
 Python is found automatically (`py` on Windows, `python3` elsewhere, or a `.venv` folder if you have one). To use a different one, set the `PYTHON` environment variable.
 
 Running the pieces separately (what `npm run dev` does for you)
-# Terminal 1 — backend (HTTP + WebSocket, port 8080)
+### Terminal 1 — backend (HTTP + WebSocket, port 8080)
 npx tsx backend/server.ts
 
-# Terminal 2 — telemetry data processing layer (port 8090)
+### Terminal 2 — telemetry data processing layer (port 8090)
 py backend/data_processing/telemetryProcessor.py --port 8090
 
-# Terminal 3 — voice listener (no port, just posts to 8080)
+### Terminal 3 — voice listener (no port, just posts to 8080)
 py backend/voice/voice_listener.py --model models/vosk-model-small-en-us-0.15
 
-# Terminal 4 — Expo (port 8081, for the phone app bundle)
+### Terminal 4 — Expo (port 8081, for the phone app bundle)
 npx expo start
 
 
-## TELEMETRY SIMULATION
+## Telemetry Simulator
 
 open the following link for telemetry simulation interface
 
@@ -38,7 +44,7 @@ http://localhost:8080/simulator
 
 
 
-## SPEECH RECOGNITION TOOLKIT
+## Speech Recognition
 
 install python packages and vosk model:
   - `py -m pip install -r requirements.txt`
